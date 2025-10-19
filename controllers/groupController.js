@@ -27,11 +27,17 @@ exports.createGroup = async (req, res) => {
 exports.addUserToGroup = async (req, res) => {
     try {
         const groupId = req.params.id;
-        const { userId } = req.body;
-        if (!userId) return res.status(400).json({ message: 'userId required' });
+        const { userId, username } = req.body;
+        let memberId = userId;
+        if (!memberId && username) {
+            const User = require('../models/User');
+            const u = await User.findOne({ username: String(username).toLowerCase().trim() }).select('_id');
+            if (u) memberId = u._id;
+        }
+        if (!memberId) return res.status(400).json({ message: 'userId or username required' });
         const group = await Group.findByIdAndUpdate(
             groupId,
-            { $addToSet: { members: userId } },
+            { $addToSet: { members: memberId } },
             { new: true }
         ).populate('members', 'username');
         if (!group) return res.status(404).json({ message: 'Group not found' });
