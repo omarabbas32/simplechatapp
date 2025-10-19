@@ -1,24 +1,14 @@
-const { MongoClient } = require('mongodb');
-
-const MONGODB_URI = process.env.MONGODB_URI;
-
-let db;
+const mongoose = require('mongoose');
 
 async function connectToDatabase() {
-    if (!MONGODB_URI) {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
         throw new Error('MONGODB_URI is not defined in the environment variables.');
     }
-    const client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-    await client.connect();
-    db = client.db();
-    console.log('Successfully connected to MongoDB');
+    await mongoose.connect(uri, {
+        // Use Mongoose defaults; options kept minimal for v8+
+    });
+    console.log('Successfully connected to MongoDB via Mongoose');
 }
 
-function getDb() {
-    if (!db) {
-        throw new Error('Database not initialized. Call connectToDatabase first.');
-    }
-    return db;
-}
-
-module.exports = { connectToDatabase, getDb };
+module.exports = { connectToDatabase };

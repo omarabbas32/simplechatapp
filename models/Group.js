@@ -1,47 +1,20 @@
-class Group {
-    constructor(name, createdBy) {
-        this.name = name;
-        this.createdBy = createdBy;        const mongoose = require('mongoose');
-        
-        const directMessageSchema = new mongoose.Schema({
-            sender: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User',
-                required: true
-            },
-            receiver: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User',
-                required: true
-            },
-            content: {
-                type: String,
-                required: true
-            },
-            isRead: {
-                type: Boolean,
-                default: false
-            }
-        }, { timestamps: true });
-        
-        module.exports = mongoose.model('DirectMessage', directMessageSchema);
-        this.createdAt = new Date();
-        this.memberIds = [createdBy]; // Creator is the first member
-    }
+const mongoose = require('mongoose');
 
-    addMember(userId) {
-        if (!this.memberIds.includes(userId)) {
-            this.memberIds.push(userId);
-        }
-    }
+const groupSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
+}, { timestamps: true });
 
-    removeMember(userId) {
-        this.memberIds = this.memberIds.filter(id => id !== userId);
-    }
-
-    getMemberCount() {
-        return this.memberIds.length;
-    }
-}
-
-module.exports = Group;
+module.exports = mongoose.model('Group', groupSchema);

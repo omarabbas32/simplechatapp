@@ -19,7 +19,7 @@ exports.sendMessage = async (req, res) => {
     try {
         const groupId = req.params.id;
         const { message } = req.body;
-        const userId = req.user.userId;
+        const userId = req.user._id;
         const username = req.user.username;
 
         const newMessage = new Message({

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -7,7 +8,7 @@ const postRoutes = require('./routes/postRoutes');
 const directMessageRoutes = require('./routes/directMessage');  
 const groupRoutes = require('./routes/groupRoutes');
 const messageRoutes = require('./routes/messageRoutes');
-const { authenticateToken } = require('./middleware/auth');
+const authenticateToken = require('./middleware/auth');
 
 
 const app = express();

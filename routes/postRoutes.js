@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const authenticateToken = require('../middleware/auth');
 const postController = require('../controllers/postController');
 
+// Post routes with proper controller functions
 router.post('/', authenticateToken, postController.createPost);
 router.get('/', authenticateToken, postController.getAllPosts);
 router.put('/:id', authenticateToken, postController.updatePost);
