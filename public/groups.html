@@ -41,9 +41,86 @@
       setTimeout(() => notification.remove(), 3000);
     }
     async function createGroup(){ const name=document.getElementById('group_name').value; if(!name.trim()){ showNotification('Please enter a group name', 'error'); return; } const r=await api('/api/groups',{method:'POST',body:JSON.stringify({name})}); if(r.status===201){ document.getElementById('group_id').value=r.data._id; loadGroups(); showNotification('Group created successfully!'); } else { showNotification(r.data?.message || 'Failed to create group', 'error'); } log(r); }
-    async function addMember(){ const id=document.getElementById('group_id').value; const uid=document.getElementById('member_id').value; const uname=document.getElementById('member_username').value; if(!id){ showNotification('Please select a group first', 'error'); return; } if(!uid && !uname){ showNotification('Please enter username or user ID', 'error'); return; } const body= uid?{userId:uid}:{username:uname}; const r=await api(`/api/groups/${id}/add-user`,{method:'POST',body:JSON.stringify(body)}); if(r.status===200){ showNotification('Member added successfully!'); } else { showNotification(r.data?.message || 'Failed to add member', 'error'); } log(r); }
+    async function addMember(){ 
+      const id=document.getElementById('group_id').value; 
+      const uname=document.getElementById('member_username').value; 
+      if(!id){ showNotification('Please select a group first', 'error'); return; } 
+      if(!uname){ showNotification('Please enter username', 'error'); return; } 
+      const body={username:uname}; 
+      const r=await api(`/api/groups/${id}/add-user`,{method:'POST',body:JSON.stringify(body)}); 
+      if(r.status===200){ 
+        showNotification('Member added successfully!'); 
+        document.getElementById('member_username').value = '';
+        loadGroupMembers(id);
+      } else { 
+        showNotification(r.data?.message || 'Failed to add member', 'error'); 
+      } 
+      log(r); 
+    }
     async function sendGroupMessage(){ const id=document.getElementById('group_id').value; const message=document.getElementById('group_message').value; if(!id){ showNotification('Please select a group first', 'error'); return; } if(!message.trim()){ showNotification('Please enter a message', 'error'); return; } const r=await api(`/api/groups/${id}/messages`,{method:'POST',body:JSON.stringify({message})}); if(r.status===201){ document.getElementById('group_message').value=''; showNotification('Message sent successfully!'); } else { showNotification(r.data?.message || 'Failed to send message', 'error'); } log(r); }
-    async function loadGroups(){ const r=await api('/api/groups'); const list=document.getElementById('groups'); list.innerHTML=''; (r.data||[]).forEach(g=>{ const li=document.createElement('li'); li.textContent = `${g.name} (${(g.members||[]).length} members)`; li.onclick=()=>{ document.getElementById('group_id').value=g._id; }; list.appendChild(li); }); log(r); }
+    async function loadGroups(){ 
+      const r=await api('/api/groups'); 
+      const list=document.getElementById('groups'); 
+      list.innerHTML=''; 
+      if(!r.data || r.data.length === 0) {
+        list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No groups yet</li>';
+        return;
+      }
+      (r.data||[]).forEach(g=>{ 
+        const li=document.createElement('li'); 
+        li.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600; margin-bottom:4px;">${g.name}</div>
+              <div style="font-size:12px; color:var(--muted);">${(g.members||[]).length} members</div>
+            </div>
+            <button onclick="selectGroup('${g._id}', '${g.name}')" style="padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer;">Select</button>
+          </div>
+        `; 
+        list.appendChild(li); 
+      }); 
+      log(r); 
+    }
+    
+    function selectGroup(id, name) {
+      document.getElementById('group_id').value = id;
+      document.getElementById('group_name').value = name;
+      document.getElementById('selected-group').textContent = name;
+      showNotification(`Selected group: ${name}`);
+      loadGroupMembers(id);
+    }
+    
+    async function loadGroupMembers(groupId) {
+      if (!groupId) return;
+      try {
+        const r = await api(`/api/groups/${groupId}`);
+        const membersList = document.getElementById('group-members');
+        membersList.innerHTML = '';
+        
+        if (r.data && r.data.members) {
+          r.data.members.forEach(member => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; background:#0f1117; border-radius:6px; margin-bottom:4px;">
+                <span>${member.username || 'Unknown'}</span>
+                <button onclick="removeMember('${groupId}', '${member._id}')" style="padding:4px 8px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">Remove</button>
+              </div>
+            `;
+            membersList.appendChild(li);
+          });
+        } else {
+          membersList.innerHTML = '<li style="text-align:center; color:var(--muted); padding:10px;">No members</li>';
+        }
+      } catch (error) {
+        console.error('Error loading group members:', error);
+      }
+    }
+    
+    async function removeMember(groupId, memberId) {
+      if (!confirm('Are you sure you want to remove this member?')) return;
+      // This would need a new API endpoint
+      showNotification('Remove member feature needs backend implementation', 'error');
+    }
     window.addEventListener('DOMContentLoaded',()=>{ 
       if(!TOKEN){ window.location.href='/login.html'; return; }
       document.getElementById('baseUrl').value=BASE_URL; 
@@ -73,17 +150,25 @@
           <ul id="groups"></ul>
         </div>
         <div>
-          <label>Group ID</label>
-          <input id="group_id" />
-          <label>Member Username</label>
-          <input id="member_username" />
-          <label>Message</label>
-          <input id="group_message" />
-          <div class="actions">
-            <button onclick="addMember()">Add member</button>
-            <button onclick="sendGroupMessage()">Send message</button>
+          <div style="background:#0f1117; padding:12px; border-radius:8px; margin-bottom:16px;">
+            <label>Selected Group</label>
+            <div id="selected-group" style="color:var(--muted); font-size:14px;">No group selected</div>
           </div>
-          <div></div>
+          
+          <label>Add Member</label>
+          <input id="member_username" placeholder="Enter username" />
+          <div class="actions">
+            <button onclick="addMember()">Add Member</button>
+          </div>
+          
+          <label style="margin-top:16px;">Send Message</label>
+          <input id="group_message" placeholder="Type your message..." />
+          <div class="actions">
+            <button onclick="sendGroupMessage()">Send Message</button>
+          </div>
+          
+          <label style="margin-top:16px;">Group Members</label>
+          <ul id="group-members" style="max-height:150px; overflow-y:auto;"></ul>
         </div>
       </div>
     </div>

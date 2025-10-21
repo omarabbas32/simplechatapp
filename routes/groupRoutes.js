@@ -8,6 +8,9 @@ const authenticateToken = require('../middleware/auth');
 // Get all groups for the authenticated user
 router.get('/', authenticateToken, groupController.getUserGroups);
 
+// Get a specific group by ID
+router.get('/:id', authenticateToken, groupController.getGroupById);
+
 // Create a new group
 router.post('/', authenticateToken, groupController.createGroup);
 

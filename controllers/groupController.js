@@ -13,6 +13,18 @@ exports.getUserGroups = async (req, res) => {
     }
 };
 
+exports.getGroupById = async (req, res) => {
+    try {
+        const group = await Group.findById(req.params.id)
+            .populate('createdBy', 'username')
+            .populate('members', 'username');
+        if (!group) return res.status(404).json({ message: 'Group not found' });
+        res.json(group);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 exports.createGroup = async (req, res) => {
     try {
         const { name } = req.body;
