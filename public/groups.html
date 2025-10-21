@@ -15,11 +15,139 @@
     .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px }
     label { display:block; margin:6px 0 2px; color:#94a3b8 }
     input, button { padding:10px 12px; font-size:14px; border-radius:8px; border:1px solid #1e293b; background:#0b1222; color:#e2e8f0; width:100% }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px }
+    @media (max-width: 768px) { 
+      .grid { grid-template-columns: 1fr; gap:16px; } 
+    }
     .actions { display:flex; gap:8px; margin-top:8px }
     .btn.primary { background:var(--accent); border-color:var(--accent); color:white }
     ul { list-style:none; padding:0; margin:0 }
-    li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222 }
+    li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222; transition:all 0.2s ease; }
+    li:hover { background:#111827; transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .group-item { 
+      display:flex; 
+      align-items:center; 
+      padding:16px; 
+      border-bottom:1px solid var(--border); 
+      cursor:pointer; 
+      transition:all 0.2s ease; 
+      position:relative;
+    }
+    .group-item:hover { 
+      background-color:rgba(239, 68, 68, 0.1); 
+      transform:translateX(2px);
+    }
+    .group-item.active { 
+      background-color:rgba(239, 68, 68, 0.15); 
+      border-left:3px solid var(--accent);
+    }
+    .group-avatar { 
+      width:48px; 
+      height:48px; 
+      border-radius:50%; 
+      background:linear-gradient(135deg, var(--accent), #dc2626); 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      color:white; 
+      font-weight:700; 
+      font-size:18px;
+      margin-right:12px; 
+      box-shadow:0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+    .group-content { 
+      flex:1; 
+      min-width:0; 
+    }
+    .group-header { 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center; 
+      margin-bottom:4px; 
+    }
+    .group-name { 
+      font-weight:600; 
+      color:var(--text); 
+      font-size:15px;
+    }
+    .group-members-count { 
+      font-size:11px; 
+      color:var(--muted); 
+      font-weight:500;
+    }
+    .group-preview { 
+      color:var(--muted); 
+      font-size:13px; 
+      white-space:nowrap; 
+      overflow:hidden; 
+      text-overflow:ellipsis; 
+      line-height:1.4;
+    }
+    .member-item {
+      display:flex;
+      align-items:center;
+      padding:8px 12px;
+      background:var(--panel);
+      border-radius:6px;
+      margin-bottom:6px;
+      transition:all 0.2s ease;
+    }
+    .member-item:hover {
+      background:rgba(239, 68, 68, 0.1);
+      transform:translateX(2px);
+    }
+    .member-avatar {
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      background:linear-gradient(135deg, var(--accent), #dc2626);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:600;
+      font-size:14px;
+      margin-right:10px;
+    }
+    .member-name {
+      flex:1;
+      font-weight:500;
+      color:var(--text);
+    }
+    .remove-member-btn {
+      padding:4px 8px;
+      background:#dc2626;
+      color:white;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:600;
+      transition:all 0.2s ease;
+    }
+    .remove-member-btn:hover {
+      background:#b91c1c;
+      transform:scale(1.05);
+    }
+    .message-input-container {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .message-input-container input {
+      flex:1;
+      border:none;
+      background:transparent;
+      color:var(--text);
+      outline:none;
+    }
+    .message-input-container input::placeholder {
+      color:var(--muted);
+    }
     .notification { position: fixed; top: 20px; right: 20px; padding: 12px 16px; border-radius: 8px; color: white; font-weight: 500; z-index: 1000; }
     .notification.success { background: #22c55e; }
     .notification.error { background: #ef4444; }
@@ -71,12 +199,15 @@
       (r.data||[]).forEach(g=>{ 
         const li=document.createElement('li'); 
         li.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:600; margin-bottom:4px;">${g.name}</div>
-              <div style="font-size:12px; color:var(--muted);">${(g.members||[]).length} members</div>
+          <div class="group-item" onclick="selectGroup('${g._id}', '${g.name}')">
+            <div class="group-avatar">${g.name.charAt(0).toUpperCase()}</div>
+            <div class="group-content">
+              <div class="group-header">
+                <span class="group-name">${g.name}</span>
+                <span class="group-members-count">${(g.members||[]).length} members</span>
+              </div>
+              <div class="group-preview">Click to manage this group</div>
             </div>
-            <button onclick="selectGroup('${g._id}', '${g.name}')" style="padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer;">Select</button>
           </div>
         `; 
         list.appendChild(li); 
@@ -87,9 +218,16 @@
     function selectGroup(id, name) {
       document.getElementById('group_id').value = id;
       document.getElementById('group_name').value = name;
-      document.getElementById('selected-group').textContent = name;
+      document.getElementById('selected-group').textContent = `Managing: ${name}`;
+      document.getElementById('selected-group').style.color = 'var(--accent)';
       showNotification(`Selected group: ${name}`);
       loadGroupMembers(id);
+      
+      // Update active group styling
+      document.querySelectorAll('.group-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
     }
     
     async function loadGroupMembers(groupId) {
@@ -106,15 +244,16 @@
           r.data.members.forEach(member => {
             const li = document.createElement('li');
             li.innerHTML = `
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; background:#0f1117; border-radius:6px; margin-bottom:4px;">
-                <span>${member.username || 'Unknown'}</span>
-                <button onclick="removeMember('${groupId}', '${member._id}')" style="padding:4px 8px; background:#dc2626; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">Remove</button>
+              <div class="member-item">
+                <div class="member-avatar">${(member.username || 'U').charAt(0).toUpperCase()}</div>
+                <div class="member-name">${member.username || 'Unknown'}</div>
+                <button onclick="removeMember('${groupId}', '${member._id}')" class="remove-member-btn">Remove</button>
               </div>
             `;
             membersList.appendChild(li);
           });
         } else {
-          membersList.innerHTML = '<li style="text-align:center; color:var(--muted); padding:10px;">No members</li>';
+          membersList.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No members yet</li>';
         }
       } catch (error) {
         console.error('Error loading group members:', error);
@@ -148,32 +287,47 @@
     <div class="panel">
       <div class="grid">
         <div>
-          <label>Group name</label>
-          <input id="group_name" />
-          <div class="actions"><button class="btn primary" onclick="createGroup()">Create group</button></div>
-          <label style="margin-top:14px">Groups</label>
-          <ul id="groups"></ul>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <label style="margin:0; font-size:18px; font-weight:600;">Groups</label>
+            <div style="color:var(--muted); font-size:12px;">Tap to select</div>
+          </div>
+          <ul id="groups" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;"></ul>
+          <div style="margin-top: 20px; padding:16px; background:var(--panel); border-radius:8px;">
+            <label style="color:var(--text); font-weight:600;">Create New Group</label>
+            <input id="group_name" placeholder="Enter group name" style="margin-top:8px;" />
+            <div class="actions" style="margin-top:12px;">
+              <button class="btn primary" onclick="createGroup()">Create Group</button>
+            </div>
+          </div>
         </div>
         <div>
-          <div style="background:#0f1117; padding:12px; border-radius:8px; margin-bottom:16px;">
-            <label>Selected Group</label>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <label style="margin:0; font-size:18px; font-weight:600;">Group Management</label>
             <div id="selected-group" style="color:var(--muted); font-size:14px;">No group selected</div>
           </div>
           
-          <label>Add Member</label>
-          <input id="member_username" placeholder="Enter username" />
-          <div class="actions">
-            <button onclick="addMember()">Add Member</button>
+          <div style="background:var(--panel); padding:16px; border-radius:8px; margin-bottom:16px;">
+            <label style="color:var(--text); font-weight:600;">Add Member</label>
+            <input id="member_username" placeholder="Enter username" style="margin-top:8px;" />
+            <div class="actions" style="margin-top:12px;">
+              <button onclick="addMember()" class="btn primary">Add Member</button>
+            </div>
           </div>
           
-          <label style="margin-top:16px;">Send Message</label>
-          <input id="group_message" placeholder="Type your message..." />
-          <div class="actions">
-            <button onclick="sendGroupMessage()">Send Message</button>
+          <div style="display:flex; flex-direction:column; height:200px; border:1px solid var(--border); border-radius:8px; background:var(--panel);">
+            <div style="padding:12px; border-bottom:1px solid var(--border);">
+              <label style="color:var(--text); font-weight:600; margin:0;">Send Message</label>
+            </div>
+            <div class="message-input-container" style="flex:1; margin:12px;">
+              <input id="group_message" placeholder="Type your message..." />
+              <button onclick="sendGroupMessage()" class="btn primary" style="flex:0 0 auto; padding:10px 20px;">Send</button>
+            </div>
           </div>
           
-          <label style="margin-top:16px;">Group Members</label>
-          <ul id="group-members" style="max-height:150px; overflow-y:auto;"></ul>
+          <div>
+            <label style="color:var(--text); font-weight:600; margin-bottom:12px;">Group Members</label>
+            <ul id="group-members" style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; padding:8px;"></ul>
+          </div>
         </div>
       </div>
     </div>
