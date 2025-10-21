@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direct Messages</title>
+  <style>
+    :root { --bg:#0b0b0f; --text:#f8fafc; --muted:#cbd5e1; --panel:#111216; --border:#1f2937; --accent:#ef4444; }
+    body { font-family: system-ui; margin:0; background:var(--bg); color:var(--text) }
+    header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center; background:#0e0e12 }
+    a { color:var(--accent); text-decoration:none; margin-right:14px; font-weight:600 }
+    a:hover { text-decoration:underline }
+    .container { max-width: 900px; margin:0 auto; padding:20px }
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px }
+    label { display:block; margin:6px 0 2px; color:#94a3b8 }
+    input, button { padding:10px 12px; font-size:14px; border-radius:8px; border:1px solid #1e293b; background:#0b1222; color:#e2e8f0; width:100% }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px }
+    .actions { display:flex; gap:8px; margin-top:8px }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:white }
+    ul { list-style:none; padding:0; margin:0 }
+    li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222 }
+    pre { display:none }
+  </style>
+  <script>
+    let BASE_URL = localStorage.getItem('baseUrl') || window.location.origin;
+    let TOKEN = localStorage.getItem('jwt') || '';
+    function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]));}catch(_){return null;}}
+    function setBaseUrl(){ const v=document.getElementById('baseUrl').value.trim(); if(v){ localStorage.setItem('baseUrl',v); BASE_URL=v; }}
+    async function api(path, opts={}){ const h=Object.assign({'Content-Type':'application/json'},opts.headers||{}); if(opts.auth!==false&&TOKEN) h.Authorization='Bearer '+TOKEN; const r=await fetch(BASE_URL+path,Object.assign({},opts,{headers:h})); const j=await r.json().catch(()=>null); if(r.status===401||r.status===403){ window.location.href='/login.html'; } return {status:r.status,data:j}; }
+    function log(o){ /* hidden */ }
+    async function sendDM(){ const uid=document.getElementById('dm_user_id').value; const uname=document.getElementById('dm_username').value; const content=document.getElementById('dm_content').value; const body = uid?{receiverId:uid,content}:{username:uname,content}; const r=await api('/api/direct-messages/send',{method:'POST',body:JSON.stringify(body)}); log(r); }
+    async function loadDMs(){ const idOrName=document.getElementById('dm_user_id').value || document.getElementById('dm_username').value; const r=await api(`/api/direct-messages/${encodeURIComponent(idOrName)}`); const list=document.getElementById('dms'); list.innerHTML=''; (r.data||[]).forEach(m=>{ const li=document.createElement('li'); li.innerHTML = `<div>${m.content||m.message||''}</div><small>${new Date(m.createdAt||m.created_at).toLocaleString()}</small>`; list.appendChild(li); }); log(r); }
+    function logout(){ localStorage.removeItem('jwt'); window.location.href='/login.html'; }
+    window.addEventListener('DOMContentLoaded',()=>{ 
+      if(!TOKEN){ window.location.href='/login.html'; return; }
+      document.getElementById('baseUrl').value=BASE_URL; 
+      const p=parseJwt(TOKEN); if(p&&p.username){ const el=document.getElementById('welcome'); if(el) el.textContent='Hi, '+p.username; }
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div style="flex:1 1 auto; display:flex; gap:14px; align-items:center;">
+      <a href="/feed.html">Feed</a>
+      <a href="/groups.html">Groups</a>
+      <a href="/dms.html">Direct Messages</a>
+      <span id="welcome" style="margin-left:auto; color:#cbd5e1"></span>
+      <button onclick="logout()" style="margin-left:8px; padding:8px 12px; background:#ef4444; color:#fff; border:0; border-radius:8px; cursor:pointer">Logout</button>
+    </div>
+    <input id="baseUrl" style="width:280px; display:none" placeholder="http://localhost:3000" />
+  </header>
+  <div class="container">
+    <div class="panel">
+      <div class="grid">
+        <div>
+          <label>Other UserId</label>
+          <input id="dm_user_id" placeholder="<OTHER_USER_ID>" />
+          <label>Other Username</label>
+          <input id="dm_username" placeholder="bob" />
+          <label>Content</label>
+          <input id="dm_content" placeholder="Hi there" />
+          <div class="actions">
+            <button class="btn primary" onclick="sendDM()">Send</button>
+            <button onclick="loadDMs()">Refresh</button>
+          </div>
+        </div>
+        <div>
+          <label>Messages</label>
+          <ul id="dms"></ul>
+          <label style="margin-top:14px">Debug</label>
+          <pre id="output"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

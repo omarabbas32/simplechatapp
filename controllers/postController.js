@@ -14,7 +14,16 @@ exports.createPost = async (req, res) => {
 
 exports.getAllPosts = async (req, res) => {
     try {
-        const posts = await Post.find()
+        const DirectMessage = require('../models/DirectMessage');
+        const currentUserId = req.user._id;
+
+        // Find distinct partner userIds from DMs (either side) and include self
+        const sentTo = await DirectMessage.distinct('receiver', { sender: currentUserId });
+        const receivedFrom = await DirectMessage.distinct('sender', { receiver: currentUserId });
+        const partnerIdSet = new Set([String(currentUserId), ...sentTo.map(String), ...receivedFrom.map(String)]);
+        const partnerIds = Array.from(partnerIdSet);
+
+        const posts = await Post.find({ author: { $in: partnerIds } })
             .populate('author', 'username')
             .sort({ createdAt: -1 });
         res.json(posts);

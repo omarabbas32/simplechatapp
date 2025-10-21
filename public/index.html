@@ -1,226 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat API Tester</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
-    h2 { margin-top: 32px; }
-    fieldset { margin: 12px 0; padding: 12px; }
-    label { display: block; margin: 6px 0 2px; }
-    input, button, textarea { padding: 8px; font-size: 14px; }
-    input, textarea { width: 100%; box-sizing: border-box; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow: auto; max-height: 320px; }
-    .token { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas; word-break: break-all; background: #f1f5f9; padding: 8px; border-radius: 4px; }
-  </style>
-  <script>
-    let BASE_URL = localStorage.getItem('baseUrl') || window.location.origin;
-    let TOKEN = localStorage.getItem('jwt') || '';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omar Eltop - Social Posts</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    function setBaseUrl() {
-      const v = document.getElementById('baseUrl').value.trim();
-      if (v) { BASE_URL = v; localStorage.setItem('baseUrl', v); log({ info: 'Base URL set', BASE_URL }); }
-    }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            background: #f0f2f5;
+            padding: 20px;
+        }
 
-    function setToken(t) {
-      TOKEN = t || '';
-      localStorage.setItem('jwt', TOKEN);
-      document.getElementById('tokenOut').textContent = TOKEN || '(none)';
-    }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-    async function api(path, opts = {}) {
-      const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-      if (opts.auth !== false && TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
-      try {
-        const res = await fetch(BASE_URL + path, Object.assign({}, opts, { headers }));
-        const text = await res.text();
-        let data; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-        return { status: res.status, data };
-      } catch (e) {
-        log({ fetchError: e && e.message ? e.message : String(e), path: BASE_URL + path });
-        throw e;
-      }
-    }
+        .post-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
 
-    function log(obj) {
-      const out = document.getElementById('output');
-      const time = new Date().toISOString();
-      out.textContent = `[${time}]\n` + JSON.stringify(obj, null, 2) + "\n\n" + out.textContent;
-    }
+        .post-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            resize: none;
+        }
 
-    // Auth
-    async function registerUser() {
-      const username = document.getElementById('reg_username').value;
-      const password = document.getElementById('reg_password').value;
-      const res = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, password }), auth: false });
-      if (res.data && res.data.token) setToken(res.data.token);
-      log({ action: 'register', res });
-    }
-    async function loginUser() {
-      const username = document.getElementById('log_username').value;
-      const password = document.getElementById('log_password').value;
-      const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), auth: false });
-      if (res.data && res.data.token) setToken(res.data.token);
-      log({ action: 'login', res });
-    }
+        .post-button {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 
-    // Posts
-    async function listPosts() {
-      const res = await api('/api/posts');
-      log({ action: 'posts:list', res });
-    }
-    async function createPost() {
-      const content = document.getElementById('post_content').value;
-      const res = await api('/api/posts', { method: 'POST', body: JSON.stringify({ content }) });
-      log({ action: 'posts:create', res });
-      if (res.data && res.data._id) document.getElementById('post_id').value = res.data._id;
-    }
-    async function updatePost() {
-      const id = document.getElementById('post_id').value;
-      const content = document.getElementById('post_content').value;
-      const res = await api(`/api/posts/${id}`, { method: 'PUT', body: JSON.stringify({ content }) });
-      log({ action: 'posts:update', res });
-    }
-    async function deletePost() {
-      const id = document.getElementById('post_id').value;
-      const res = await api(`/api/posts/${id}`, { method: 'DELETE' });
-      log({ action: 'posts:delete', res });
-    }
+        .post-button:hover {
+            background: #166fe5;
+        }
 
-    // Groups
-    async function createGroup() {
-      const name = document.getElementById('group_name').value;
-      const res = await api('/api/groups', { method: 'POST', body: JSON.stringify({ name }) });
-      log({ action: 'groups:create', res });
-      if (res.data && res.data._id) document.getElementById('group_id').value = res.data._id;
-    }
-    async function addUserToGroup() {
-      const groupId = document.getElementById('group_id').value;
-      const userId = document.getElementById('member_id').value;
-      const username = document.getElementById('member_username') ? document.getElementById('member_username').value : '';
-      const body = userId ? { userId } : (username ? { username } : {});
-      const res = await api(`/api/groups/${groupId}/add-user`, { method: 'POST', body: JSON.stringify(body) });
-      log({ action: 'groups:add-user', res });
-    }
-    async function sendGroupMessage() {
-      const groupId = document.getElementById('group_id').value;
-      const message = document.getElementById('group_message').value;
-      const res = await api(`/api/groups/${groupId}/messages`, { method: 'POST', body: JSON.stringify({ message }) });
-      log({ action: 'groups:send-message', res });
-    }
-    async function listGroupMessages() {
-      const groupId = document.getElementById('group_id').value;
-      const res = await api(`/api/groups/${groupId}/messages`);
-      log({ action: 'groups:list-messages', res });
-    }
+        .post {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
 
-    // Direct messages
-    async function sendDirectMessage() {
-      const userId = document.getElementById('dm_user_id').value;
-      const username = document.getElementById('dm_username') ? document.getElementById('dm_username').value : '';
-      const content = document.getElementById('dm_content').value;
-      const body = userId ? { receiverId: userId, content } : { username, content };
-      const res = await api('/api/direct-messages/send', { method: 'POST', body: JSON.stringify(body) });
-      log({ action: 'dm:send', res });
-    }
-    async function listDirectMessages() {
-      const userIdOrName = document.getElementById('dm_user_id').value || (document.getElementById('dm_username') ? document.getElementById('dm_username').value : '');
-      const res = await api(`/api/direct-messages/${encodeURIComponent(userIdOrName)}`);
-      log({ action: 'dm:list', res });
-    }
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('baseUrl').value = BASE_URL;
-      document.getElementById('tokenOut').textContent = TOKEN || '(none)';
-    });
-  </script>
-  </head>
-  <body>
-    <h1>Chat API Tester</h1>
+        .post-author {
+            font-weight: 600;
+            margin-right: 8px;
+        }
 
-    <fieldset>
-      <legend>Config</legend>
-      <label for="baseUrl">Base URL</label>
-      <input id="baseUrl" placeholder="http://localhost:3000" />
-      <div class="actions">
-        <button onclick="setBaseUrl()">Set Base URL</button>
-        <button onclick="setToken('')">Clear Token</button>
-      </div>
-      <div style="margin-top:8px">Token: <span class="token" id="tokenOut"></span></div>
-    </fieldset>
+        .post-time {
+            color: #65676b;
+            font-size: 0.9em;
+        }
 
-    <h2>Auth</h2>
-    <div class="row">
-      <fieldset>
-        <legend>Register</legend>
-        <label>Username</label>
-        <input id="reg_username" placeholder="alice" />
-        <label>Password</label>
-        <input id="reg_password" type="password" placeholder="Password123!" />
-        <div class="actions"><button onclick="registerUser()">Register</button></div>
-      </fieldset>
-      <fieldset>
-        <legend>Login</legend>
-        <label>Username</label>
-        <input id="log_username" placeholder="alice" />
-        <label>Password</label>
-        <input id="log_password" type="password" placeholder="Password123!" />
-        <div class="actions"><button onclick="loginUser()">Login</button></div>
-      </fieldset>
+        .post-content {
+            margin-bottom: 12px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 12px;
+        }
+
+        .post-action {
+            color: #65676b;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .post-action:hover {
+            color: #1877f2;
+        }
+
+        .comments {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+        }
+
+        .comment {
+            padding: 8px;
+            background: #f0f2f5;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="post-form">
+            <textarea class="post-input" placeholder="What's on your mind?"></textarea>
+            <button class="post-button" onclick="createPost()">Post</button>
+        </div>
+        <div id="posts"></div>
     </div>
 
-    <h2>Posts</h2>
-    <fieldset>
-      <label>Post ID</label>
-      <input id="post_id" placeholder="(auto from create)" />
-      <label>Content</label>
-      <textarea id="post_content" rows="2" placeholder="Hello world"></textarea>
-      <div class="actions">
-        <button onclick="listPosts()">List</button>
-        <button onclick="createPost()">Create</button>
-        <button onclick="updatePost()">Update</button>
-        <button onclick="deletePost()">Delete</button>
-      </div>
-    </fieldset>
+    <script>
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
 
-    <h2>Groups</h2>
-    <fieldset>
-      <label>Group ID</label>
-      <input id="group_id" placeholder="(auto from create)" />
-      <label>Name</label>
-      <input id="group_name" placeholder="General" />
-      <label>Member UserId</label>
-      <input id="member_id" placeholder="<BOB_USER_ID>" />
-      <label>Member Username (alternative)</label>
-      <input id="member_username" placeholder="bob" />
-      <label>Message</label>
-      <input id="group_message" placeholder="Hi group" />
-      <div class="actions">
-        <button onclick="createGroup()">Create Group</button>
-        <button onclick="addUserToGroup()">Add Member</button>
-        <button onclick="sendGroupMessage()">Send Message</button>
-        <button onclick="listGroupMessages()">List Messages</button>
-      </div>
-    </fieldset>
+        // Fetch and display posts
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/posts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const posts = await response.json();
+                displayPosts(posts);
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+            }
+        }
 
-    <h2>Direct Messages</h2>
-    <fieldset>
-      <label>Other UserId</label>
-      <input id="dm_user_id" placeholder="<OTHER_USER_ID>" />
-      <label>Other Username (alternative)</label>
-      <input id="dm_username" placeholder="bob" />
-      <label>Content</label>
-      <input id="dm_content" placeholder="Hi there" />
-      <div class="actions">
-        <button onclick="sendDirectMessage()">Send DM</button>
-        <button onclick="listDirectMessages()">List DMs</button>
-      </div>
-    </fieldset>
+        // Create new post
+        async function createPost() {
+            const input = document.querySelector('.post-input');
+            const content = input.value.trim();
+            if (!content) return;
 
-    <h2>Output</h2>
-    <pre id="output"></pre>
-  </body>
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+                
+                if (response.ok) {
+                    input.value = '';
+                    fetchPosts();
+                }
+            } catch (error) {
+                console.error('Error creating post:', error);
+            }
+        }
+
+        // Like/unlike post
+        async function toggleLike(postId) {
+            try {
+                await fetch(`/api/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                fetchPosts();
+            } catch (error) {
+                console.error('Error toggling like:', error);
+            }
+        }
+
+        // Add comment
+        async function addComment(postId) {
+            const input = document.querySelector(`#comment-${postId}`);
+            const content = input.value.trim();
+            if (!content) return;
+
+            try {
+                await fetch(`/api/posts/${postId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+                input.value = '';
+                fetchPosts();
+            } catch (error) {
+                console.error('Error adding comment:', error);
+            }
+        }
+
+        // Display posts in DOM
+        function displayPosts(posts) {
+            const postsContainer = document.getElementById('posts');
+            postsContainer.innerHTML = posts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        <span class="post-author">${post.author.username}</span>
+                        <span class="post-time">${new Date(post.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div class="post-content">${post.content}</div>
+                    <div class="post-actions">
+                        <button class="post-action" onclick="toggleLike('${post._id}')">
+                            ❤️ ${post.likes.length} Likes
+                        </button>
+                        <button class="post-action">
+                            💬 ${post.comments.length} Comments
+                        </button>
+                    </div>
+                    <div class="comments">
+                        ${post.comments.map(comment => `
+                            <div class="comment">
+                                <strong>${comment.user.username}:</strong> ${comment.content}
+                            </div>
+                        `).join('')}
+                        <div class="comment-form">
+                            <input type="text" class="comment-input" id="comment-${post._id}" 
+                                placeholder="Write a comment...">
+                            <button class="post-button" onclick="addComment('${post._id}')">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initial load
+        fetchPosts();
+    </script>
+</body>
 </html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Groups</title>
+  <style>
+    :root { --bg:#0b0b0f; --text:#f8fafc; --muted:#cbd5e1; --panel:#111216; --border:#1f2937; --accent:#ef4444; }
+    body { font-family: system-ui; margin:0; background:var(--bg); color:var(--text) }
+    header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center; background:#0e0e12 }
+    a { color:var(--accent); text-decoration:none; margin-right:14px; font-weight:600 }
+    a:hover { text-decoration:underline }
+    .container { max-width: 980px; margin:0 auto; padding:20px }
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px }
+    label { display:block; margin:6px 0 2px; color:#94a3b8 }
+    input, button { padding:10px 12px; font-size:14px; border-radius:8px; border:1px solid #1e293b; background:#0b1222; color:#e2e8f0; width:100% }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px }
+    .actions { display:flex; gap:8px; margin-top:8px }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:white }
+    ul { list-style:none; padding:0; margin:0 }
+    li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222 }
+    pre { display:none }
+  </style>
+  <script>
+    let BASE_URL = localStorage.getItem('baseUrl') || window.location.origin;
+    let TOKEN = localStorage.getItem('jwt') || '';
+    function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]));}catch(_){return null;}}
+    function setBaseUrl(){ const v=document.getElementById('baseUrl').value.trim(); if(v){ localStorage.setItem('baseUrl',v); BASE_URL=v; loadGroups(); }}
+    async function api(path, opts={}){ const h=Object.assign({'Content-Type':'application/json'},opts.headers||{}); if(opts.auth!==false&&TOKEN) h.Authorization='Bearer '+TOKEN; const r=await fetch(BASE_URL+path,Object.assign({},opts,{headers:h})); const j=await r.json().catch(()=>null); if(r.status===401||r.status===403){ window.location.href='/login.html'; } return {status:r.status,data:j}; }
+    function log(o){ /* hidden in user UI */ }
+    function logout(){ localStorage.removeItem('jwt'); window.location.href='/login.html'; }
+    async function createGroup(){ const name=document.getElementById('group_name').value; const r=await api('/api/groups',{method:'POST',body:JSON.stringify({name})}); if(r.status===201){ document.getElementById('group_id').value=r.data._id; loadGroups(); } log(r); }
+    async function addMember(){ const id=document.getElementById('group_id').value; const uid=document.getElementById('member_id').value; const uname=document.getElementById('member_username').value; const body= uid?{userId:uid}:{username:uname}; const r=await api(`/api/groups/${id}/add-user`,{method:'POST',body:JSON.stringify(body)}); log(r); }
+    async function sendGroupMessage(){ const id=document.getElementById('group_id').value; const message=document.getElementById('group_message').value; const r=await api(`/api/groups/${id}/messages`,{method:'POST',body:JSON.stringify({message})}); log(r); }
+    async function loadGroups(){ const r=await api('/api/groups'); const list=document.getElementById('groups'); list.innerHTML=''; (r.data||[]).forEach(g=>{ const li=document.createElement('li'); li.textContent = `${g.name} (${(g.members||[]).length} members)`; li.onclick=()=>{ document.getElementById('group_id').value=g._id; }; list.appendChild(li); }); log(r); }
+    window.addEventListener('DOMContentLoaded',()=>{ 
+      if(!TOKEN){ window.location.href='/login.html'; return; }
+      document.getElementById('baseUrl').value=BASE_URL; 
+      const p=parseJwt(TOKEN); if(p&&p.username){ const el=document.getElementById('welcome'); if(el) el.textContent='Hi, '+p.username; }
+      loadGroups(); 
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div style="flex:1 1 auto; display:flex; gap:14px; align-items:center;">
+      <a href="/feed.html">Feed</a>
+      <a href="/groups.html">Groups</a>
+      <a href="/dms.html">Direct Messages</a>
+      <a href="/login.html" style="margin-left:auto">Auth</a>
+    </div>
+    <input id="baseUrl" style="width:280px; display:none" placeholder="http://localhost:3000" />
+  </header>
+  <div class="container">
+    <div class="panel">
+      <div class="grid">
+        <div>
+          <label>Group name</label>
+          <input id="group_name" placeholder="General" />
+          <div class="actions"><button class="btn primary" onclick="createGroup()">Create group</button></div>
+          <label style="margin-top:14px">Groups</label>
+          <ul id="groups"></ul>
+        </div>
+        <div>
+          <label>Group ID</label>
+          <input id="group_id" placeholder="(click a group or paste id)" />
+          <label>Member UserId</label>
+          <input id="member_id" placeholder="<USER_ID>" />
+          <label>Member Username</label>
+          <input id="member_username" placeholder="bob" />
+          <label>Message</label>
+          <input id="group_message" placeholder="Hi group" />
+          <div class="actions">
+            <button onclick="addMember()">Add member</button>
+            <button onclick="sendGroupMessage()">Send message</button>
+          </div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

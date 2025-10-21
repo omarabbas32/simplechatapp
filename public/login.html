@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Register</title>
+  <style>
+    :root { --bg:#0b0b0f; --text:#f8fafc; --muted:#cbd5e1; --panel:#111216; --border:#1f2937; --accent:#ef4444; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background: var(--bg); color: var(--text); }
+    header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; background: #0e0e12; }
+    a { color: var(--accent); text-decoration: none; margin-right: 14px; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin: 12px 0; }
+    legend { color: var(--muted); }
+    label { display: block; margin: 6px 0 6px; color: var(--muted); font-size: 14px; }
+    input, button { padding: 12px 14px; font-size: 14px; border-radius: 10px; border: 1px solid var(--border); background: #0f1117; color: var(--text); width: 100%; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn { cursor: pointer; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  </style>
+  <script>
+    let BASE_URL = localStorage.getItem('baseUrl') || window.location.origin;
+    let TOKEN = localStorage.getItem('jwt') || '';
+    async function api(path, opts = {}) {
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      if (opts.auth !== false && TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+      const res = await fetch(BASE_URL + path, Object.assign({}, opts, { headers }));
+      const text = await res.text();
+      let data; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      return { status: res.status, data };
+    }
+    function setToken(t) { TOKEN = t || ''; localStorage.setItem('jwt', TOKEN); }
+    async function registerUser() {
+      const username = document.getElementById('reg_username').value;
+      const password = document.getElementById('reg_password').value;
+      const res = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, password }), auth: false });
+      if (res.data && res.data.token) setToken(res.data.token);
+      if (res.status === 201) window.location.href = '/feed.html';
+    }
+    async function loginUser() {
+      const username = document.getElementById('log_username').value;
+      const password = document.getElementById('log_password').value;
+      const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), auth: false });
+      if (res.data && res.data.token) setToken(res.data.token);
+      if (res.status === 200) window.location.href = '/feed.html';
+    }
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('baseUrl').value = BASE_URL;
+      if (TOKEN) {
+        try {
+          const res = await api('/api/posts');
+          if (res.status === 200) {
+            window.location.href = '/feed.html';
+            return;
+          }
+          localStorage.removeItem('jwt');
+        } catch (_) {
+          localStorage.removeItem('jwt');
+        }
+      }
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div style="flex:1 1 auto; display:flex; gap:14px; align-items:center;">
+      <a href="/feed.html">Feed</a>
+      <a href="/groups.html">Groups</a>
+      <a href="/dms.html">Direct Messages</a>
+      <a href="/login.html" style="margin-left:auto">Auth</a>
+    </div>
+    <input id="baseUrl" style="width:280px; display:none" placeholder="http://localhost:3000" />
+  </header>
+
+  <div class="container">
+    <div class="panel">
+      <div class="row">
+        <fieldset>
+          <legend>Register</legend>
+          <label>Username</label>
+          <input id="reg_username" placeholder="alice" />
+          <label>Password</label>
+          <input id="reg_password" type="password" placeholder="Password123!" />
+          <div class="actions"><button class="btn primary" onclick="registerUser()">Register</button></div>
+        </fieldset>
+        <fieldset>
+          <legend>Login</legend>
+          <label>Username</label>
+          <input id="log_username" placeholder="alice" />
+          <label>Password</label>
+          <input id="log_password" type="password" placeholder="Password123!" />
+          <div class="actions"><button class="btn primary" onclick="loginUser()">Login</button></div>
+        </fieldset>
+      </div>
+      <div class="note">Use the navigation after login to view Feed, Groups, or DMs.</div>
+    </div>
+  </div>
+</body>
+</html>
+
