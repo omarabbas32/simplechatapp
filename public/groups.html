@@ -47,7 +47,9 @@
       if(!id){ showNotification('Please select a group first', 'error'); return; } 
       if(!uname){ showNotification('Please enter username', 'error'); return; } 
       const body={username:uname}; 
+      console.log('Adding member:', { groupId: id, username: uname, body });
       const r=await api(`/api/groups/${id}/add-user`,{method:'POST',body:JSON.stringify(body)}); 
+      console.log('Add member response:', r);
       if(r.status===200){ 
         showNotification('Member added successfully!'); 
         document.getElementById('member_username').value = '';
@@ -93,11 +95,14 @@
     async function loadGroupMembers(groupId) {
       if (!groupId) return;
       try {
+        console.log('Loading members for group:', groupId);
         const r = await api(`/api/groups/${groupId}`);
+        console.log('Group details response:', r);
         const membersList = document.getElementById('group-members');
         membersList.innerHTML = '';
         
         if (r.data && r.data.members) {
+          console.log('Group members:', r.data.members);
           r.data.members.forEach(member => {
             const li = document.createElement('li');
             li.innerHTML = `

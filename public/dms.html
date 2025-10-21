@@ -21,13 +21,16 @@
     ul { list-style:none; padding:0; margin:0 }
     li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222; cursor:pointer; }
     li:hover { background:#111827; }
-    .conversation { display:flex; align-items:center; padding:12px; border-bottom:1px solid var(--border); }
-    .conversation:last-child { border-bottom:none; }
+    .conversation-item { display:flex; align-items:center; padding:12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background-color 0.2s; }
+    .conversation-item:hover { background-color:var(--hover); }
+    .conversation-item.active { background-color:var(--accent); }
     .conversation-avatar { width:40px; height:40px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; color:white; font-weight:600; margin-right:12px; }
-    .conversation-info { flex:1; }
-    .conversation-name { font-weight:600; color:var(--text); margin-bottom:2px; }
-    .conversation-preview { color:var(--muted); font-size:13px; }
-    .conversation-time { color:var(--muted); font-size:12px; }
+    .conversation-content { flex:1; min-width:0; }
+    .conversation-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+    .conversation-name { font-weight:600; color:var(--text); }
+    .conversation-time { font-size:12px; color:var(--muted); }
+    .conversation-preview { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .unread-badge { background:var(--accent); color:white; border-radius:10px; padding:2px 6px; font-size:12px; font-weight:600; margin-left:8px; }
     .message-bubble { max-width:70%; padding:8px 12px; border-radius:18px; margin-bottom:8px; }
     .message-sent { background:var(--accent); color:white; margin-left:auto; }
     .message-received { background:#1f2937; color:var(--text); }
@@ -70,14 +73,66 @@
     let currentConversation = null;
     
     async function loadConversations() {
-      // This would need a new API endpoint to get all conversations
-      // For now, we'll show a placeholder
-      const list = document.getElementById('conversations');
-      list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No conversations yet</li>';
+      try {
+        const r = await api('/api/dms/conversations');
+        const list = document.getElementById('conversations'); 
+        list.innerHTML = '';
+        
+        if (!r.data || r.data.length === 0) {
+          list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No conversations yet</li>';
+          return;
+        }
+        
+        r.data.forEach(conv => {
+          const li = document.createElement('li');
+          const timeAgo = getTimeAgo(conv.lastMessageTime);
+          li.innerHTML = `
+            <div class="conversation-item" onclick="selectConversation('${conv.username}')">
+              <div class="conversation-avatar">${conv.username.charAt(0).toUpperCase()}</div>
+              <div class="conversation-content">
+                <div class="conversation-header">
+                  <span class="conversation-name">${conv.username}</span>
+                  <span class="conversation-time">${timeAgo}</span>
+                </div>
+                <div class="conversation-preview">${conv.lastMessage || 'No messages yet'}</div>
+                ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+              </div>
+            </div>
+          `;
+          list.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        const list = document.getElementById('conversations');
+        list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">Error loading conversations</li>';
+      }
     }
     
-    async function loadDMs(){ 
-      const uname=document.getElementById('dm_username').value; 
+    function getTimeAgo(dateString) {
+      const now = new Date();
+      const date = new Date(dateString);
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) return 'now';
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+      return `${Math.floor(diffInSeconds / 86400)}d`;
+    }
+    
+    function selectConversation(username) {
+      currentConversation = username;
+      document.getElementById('conversation-title').textContent = username;
+      loadDMs(username);
+      
+      // Update active conversation styling
+      document.querySelectorAll('.conversation-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+    }
+    
+    async function loadDMs(username = null){ 
+      const uname = username || document.getElementById('dm_username').value; 
       if(!uname.trim()){ showNotification('Please enter username to load messages', 'error'); return; }
       currentConversation = uname;
       const r=await api(`/api/direct-messages/${encodeURIComponent(uname)}`); 

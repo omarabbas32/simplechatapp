@@ -38,3 +38,73 @@ exports.getMessages = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getConversations = async (req, res) => {
+    try {
+        const User = require('../models/User');
+        
+        // Get all unique users that the current user has DMed with
+        const conversations = await DirectMessage.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { sender: req.user._id },
+                        { receiver: req.user._id }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ["$sender", req.user._id] },
+                            "$receiver",
+                            "$sender"
+                        ]
+                    },
+                    lastMessage: { $last: "$content" },
+                    lastMessageTime: { $last: "$createdAt" },
+                    unreadCount: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $ne: ["$sender", req.user._id] },
+                                    { $ne: ["$read", true] }
+                                ]},
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            {
+                $unwind: "$user"
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: "$user.username",
+                    lastMessage: 1,
+                    lastMessageTime: 1,
+                    unreadCount: 1
+                }
+            },
+            {
+                $sort: { lastMessageTime: -1 }
+            }
+        ]);
+        
+        res.json(conversations);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
