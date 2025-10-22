@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat App</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background: #0b0b0f; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .container { text-align: center; }
-    h1 { color: #ef4444; margin-bottom: 20px; }
-    p { color: #cbd5e1; margin-bottom: 30px; }
-    a { color: #ef4444; text-decoration: none; font-weight: 600; font-size: 18px; padding: 12px 24px; border: 2px solid #ef4444; border-radius: 8px; display: inline-block; }
-    a:hover { background: #ef4444; color: white; }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Omar Eltop — Chat & Posts</title>
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to Chat App</h1>
-    <p>Connect with friends and share your thoughts</p>
-    <a href="/login.html">Get Started</a>
+  <div id="root" class="app-root">
+    <aside class="sidebar">
+      <div class="brand">Omar Eltop</div>
+      <nav>
+        <button id="tab-posts" class="nav-btn active">Posts</button>
+        <button id="tab-messages" class="nav-btn">Messages</button>
+      </nav>
+      <div class="auth-area">
+        <span id="userLabel"></span>
+        <button id="logoutBtn" class="small-btn">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="authBox" class="card auth-card">
+        <!-- login/register UI injected -->
+      </div>
+
+      <div id="content" class="hidden">
+        <section id="postsView" class="view card"></section>
+        <section id="messagesView" class="view card hidden"></section>
+      </div>
+    </main>
   </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
