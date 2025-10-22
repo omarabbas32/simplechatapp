@@ -1,344 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Direct Messages</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Omar Eltop — Direct Messages</title>
+  <link rel="stylesheet" href="/css/styles.css" />
   <style>
-    :root { --bg:#0b0b0f; --text:#f8fafc; --muted:#cbd5e1; --panel:#111216; --border:#1f2937; --accent:#ef4444; }
-    body { font-family: system-ui; margin:0; background:var(--bg); color:var(--text) }
-    header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:center; background:#0e0e12 }
-    a { color:var(--accent); text-decoration:none; margin-right:14px; font-weight:600 }
-    a:hover { text-decoration:underline }
-    .container { max-width: 900px; margin:0 auto; padding:20px }
-    @media (max-width: 768px) { .container { padding: 10px; } header { padding: 10px; } .grid { grid-template-columns: 1fr; } }
-    .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px }
-    label { display:block; margin:6px 0 2px; color:#94a3b8 }
-    input, button { padding:10px 12px; font-size:14px; border-radius:8px; border:1px solid #1e293b; background:#0b1222; color:#e2e8f0; width:100% }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px }
-    @media (max-width: 768px) { 
-      .grid { grid-template-columns: 1fr; gap:16px; } 
-      .conversation-item { padding:10px 12px; }
-      .conversation-avatar { width:40px; height:40px; font-size:16px; }
-    }
-    .actions { display:flex; gap:8px; margin-top:8px }
-    .btn.primary { background:var(--accent); border-color:var(--accent); color:white }
-    ul { list-style:none; padding:0; margin:0 }
-    li { border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:8px; background:#0b1222; cursor:pointer; }
-    li:hover { background:#111827; }
-    .conversation-item { 
-      display:flex; 
-      align-items:center; 
-      padding:12px 16px; 
-      border-bottom:1px solid var(--border); 
-      cursor:pointer; 
-      transition:all 0.2s ease; 
-      position:relative;
-    }
-    .conversation-item:hover { 
-      background-color:rgba(239, 68, 68, 0.1); 
-      transform:translateX(2px);
-    }
-    .conversation-item.active { 
-      background-color:rgba(239, 68, 68, 0.15); 
-      border-left:3px solid var(--accent);
-    }
-    .conversation-avatar { 
-      width:48px; 
-      height:48px; 
-      border-radius:50%; 
-      background:linear-gradient(135deg, var(--accent), #dc2626); 
-      display:flex; 
-      align-items:center; 
-      justify-content:center; 
-      color:white; 
-      font-weight:700; 
-      font-size:18px;
-      margin-right:12px; 
-      box-shadow:0 2px 8px rgba(239, 68, 68, 0.3);
-    }
-    .conversation-content { 
-      flex:1; 
-      min-width:0; 
-    }
-    .conversation-header { 
-      display:flex; 
-      justify-content:space-between; 
-      align-items:center; 
-      margin-bottom:4px; 
-    }
-    .conversation-name { 
-      font-weight:600; 
-      color:var(--text); 
-      font-size:15px;
-    }
-    .conversation-time { 
-      font-size:11px; 
-      color:var(--muted); 
-      font-weight:500;
-    }
-    .conversation-preview { 
-      color:var(--muted); 
-      font-size:13px; 
-      white-space:nowrap; 
-      overflow:hidden; 
-      text-overflow:ellipsis; 
-      line-height:1.4;
-    }
-    .unread-badge { 
-      background:var(--accent); 
-      color:white; 
-      border-radius:12px; 
-      padding:3px 8px; 
-      font-size:11px; 
-      font-weight:700; 
-      margin-left:8px; 
-      min-width:18px;
-      text-align:center;
-    }
-    .message-bubble { 
-      max-width:70%; 
-      padding:12px 16px; 
-      border-radius:20px; 
-      margin-bottom:8px; 
-      word-wrap:break-word;
-      box-shadow:0 1px 3px rgba(0,0,0,0.2);
-    }
-    .message-sent { 
-      background:linear-gradient(135deg, var(--accent), #dc2626); 
-      color:white; 
-      margin-left:auto; 
-      border-bottom-right-radius:6px;
-    }
-    .message-received { 
-      background:linear-gradient(135deg, #1f2937, #374151); 
-      color:var(--text); 
-      border-bottom-left-radius:6px;
-    }
-    .message-time { 
-      font-size:10px; 
-      color:var(--muted); 
-      text-align:right; 
-      margin-top:4px; 
-      opacity:0.8;
-    }
-    .messages-container {
-      max-height:400px;
-      overflow-y:auto;
-      padding:16px;
-      background:var(--bg);
-    }
-    .messages-container::-webkit-scrollbar {
-      width:6px;
-    }
-    .messages-container::-webkit-scrollbar-track {
-      background:var(--panel);
-    }
-    .messages-container::-webkit-scrollbar-thumb {
-      background:var(--border);
-      border-radius:3px;
-    }
-    .message-input-container {
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:12px;
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .message-input-container input {
-      flex:1;
-      border:none;
-      background:transparent;
-      color:var(--text);
-      outline:none;
-    }
-    .message-input-container input::placeholder {
-      color:var(--muted);
-    }
-    .notification { position: fixed; top: 20px; right: 20px; padding: 12px 16px; border-radius: 8px; color: white; font-weight: 500; z-index: 1000; }
-    .notification.success { background: #22c55e; }
-    .notification.error { background: #ef4444; }
-    pre { display:none }
+    /* DM page tweaks */
+    .dm-wrap{display:flex;gap:16px;min-height:80vh}
+    .dm-list{width:320px;background:rgba(255,255,255,0.02);padding:14px;border-radius:12px;overflow:auto}
+    .dm-item{padding:10px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .dm-item:hover{background:rgba(255,255,255,0.03)}
+    .dm-item.active{background:linear-gradient(90deg,#0f7be6, #0b66d7, rgba(11,102,215,0.08));color:#fff}
+    .dm-chat{flex:1;display:flex;flex-direction:column;gap:12px}
+    .dm-header{display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.01);border-radius:10px}
+    .messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(0,0,0,0.02), transparent);border-radius:10px}
+    .msg{max-width:70%;padding:10px;border-radius:12px;background:rgba(255,255,255,0.02)}
+    .msg.me{margin-left:auto;background:linear-gradient(90deg,#0f7be6,#0b66d7);color:#fff}
+    .composer{display:flex;gap:8px;margin-top:8px}
+    .composer input{flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    .btn{background:#0b66d7;color:#fff;padding:10px 12px;border-radius:10px;border:0;cursor:pointer}
+    .muted{color:#95a3b8;font-size:13px}
+    @media (max-width:900px){ .dm-list{width:100%} .dm-wrap{flex-direction:column} }
   </style>
-  <script>
-    let BASE_URL = localStorage.getItem('baseUrl') || window.location.origin;
-    let TOKEN = localStorage.getItem('jwt') || '';
-    function parseJwt(t){try{return JSON.parse(atob(t.split('.')[1]));}catch(_){return null;}}
-    function setBaseUrl(){ const v=document.getElementById('baseUrl').value.trim(); if(v){ localStorage.setItem('baseUrl',v); BASE_URL=v; }}
-    async function api(path, opts={}){ const h=Object.assign({'Content-Type':'application/json'},opts.headers||{}); if(opts.auth!==false&&TOKEN) h.Authorization='Bearer '+TOKEN; const r=await fetch(BASE_URL+path,Object.assign({},opts,{headers:h})); const j=await r.json().catch(()=>null); if(r.status===401||r.status===403){ window.location.href='/login.html'; } return {status:r.status,data:j}; }
-    function log(o){ /* hidden */ }
-    function logout(){ localStorage.removeItem('jwt'); window.location.href='/login.html'; }
-    function showNotification(message, type = 'success') {
-      const notification = document.createElement('div');
-      notification.className = `notification ${type}`;
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      setTimeout(() => notification.remove(), 3000);
-    }
-    async function sendDM(){ 
-      const uname = currentConversation || document.getElementById('dm_username').value; 
-      const content=document.getElementById('dm_content').value; 
-      if(!uname.trim()){ showNotification('Please enter username', 'error'); return; }
-      if(!content.trim()){ showNotification('Please enter message content', 'error'); return; }
-      const body = {username:uname,content}; 
-      const r=await api('/api/direct-messages/send',{method:'POST',body:JSON.stringify(body)}); 
-      if(r.status===201){ 
-        document.getElementById('dm_content').value=''; 
-        showNotification('Message sent successfully!'); 
-        loadDMs(); // Refresh messages
-      }
-      else { showNotification(r.data?.message || 'Failed to send message', 'error'); }
-      log(r); 
-    }
-    let currentConversation = null;
-    
-    async function loadConversations() {
-      try {
-        const r = await api('/api/dms/conversations');
-        const list = document.getElementById('conversations'); 
-        list.innerHTML = '';
-        
-        if (!r.data || r.data.length === 0) {
-          list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No conversations yet</li>';
-          return;
-        }
-        
-        r.data.forEach(conv => {
-          const li = document.createElement('li');
-          const timeAgo = getTimeAgo(conv.lastMessageTime);
-          li.innerHTML = `
-            <div class="conversation-item" onclick="selectConversation('${conv.username}')">
-              <div class="conversation-avatar">${conv.username.charAt(0).toUpperCase()}</div>
-              <div class="conversation-content">
-                <div class="conversation-header">
-                  <span class="conversation-name">${conv.username}</span>
-                  <span class="conversation-time">${timeAgo}</span>
-                </div>
-                <div class="conversation-preview">${conv.lastMessage || 'No messages yet'}</div>
-                ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
-              </div>
-            </div>
-          `;
-          list.appendChild(li);
-        });
-      } catch (error) {
-        console.error('Error loading conversations:', error);
-        const list = document.getElementById('conversations');
-        list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">Error loading conversations</li>';
-      }
-    }
-    
-    function getTimeAgo(dateString) {
-      const now = new Date();
-      const date = new Date(dateString);
-      const diffInSeconds = Math.floor((now - date) / 1000);
-      
-      if (diffInSeconds < 60) return 'now';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
-      return `${Math.floor(diffInSeconds / 86400)}d`;
-    }
-    
-    function selectConversation(username) {
-      currentConversation = username;
-      document.getElementById('conversation-title').textContent = `Chatting with ${username}`;
-      document.getElementById('conversation-title').style.color = 'var(--accent)';
-      loadDMs(username);
-      
-      // Update active conversation styling
-      document.querySelectorAll('.conversation-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      event.currentTarget.classList.add('active');
-      
-      // Show notification
-      showNotification(`Started chat with ${username}`);
-    }
-    
-    async function loadDMs(username = null){ 
-      const uname = username || document.getElementById('dm_username').value; 
-      if(!uname.trim()){ showNotification('Please enter username to load messages', 'error'); return; }
-      currentConversation = uname;
-      const r=await api(`/api/direct-messages/${encodeURIComponent(uname)}`); 
-      const list=document.getElementById('dms'); 
-      list.innerHTML=''; 
-      if(!r.data || r.data.length === 0) {
-        list.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No messages yet</li>';
-        return;
-      }
-      (r.data||[]).forEach(m=>{ 
-        const li=document.createElement('li'); 
-        const isSent = m.sender === parseJwt(TOKEN)?._id;
-        const bubbleClass = isSent ? 'message-sent' : 'message-received';
-        const time = new Date(m.createdAt||m.created_at);
-        const timeStr = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
-        li.innerHTML = `
-          <div style="display:flex; ${isSent ? 'justify-content:flex-end' : 'justify-content:flex-start'}; margin-bottom:12px;">
-            <div class="message-bubble ${bubbleClass}" style="max-width:70%;">
-              <div style="padding:8px 0;">${m.content||m.message||''}</div>
-              <div class="message-time" style="text-align:${isSent ? 'right' : 'left'}; margin-top:4px;">${timeStr}</div>
-            </div>
-          </div>
-        `; 
-        list.appendChild(li); 
-      });
-      
-      // Scroll to bottom
-      list.scrollTop = list.scrollHeight; 
-      log(r); 
-    }
-    window.addEventListener('DOMContentLoaded',()=>{ 
-      if(!TOKEN){ window.location.href='/login.html'; return; }
-      document.getElementById('baseUrl').value=BASE_URL; 
-      const p=parseJwt(TOKEN); if(p&&p.username){ const el=document.getElementById('welcome'); if(el) el.textContent='Hi, '+p.username; }
-      loadConversations();
-    });
-  </script>
 </head>
 <body>
-  <header>
-    <div style="flex:1 1 auto; display:flex; gap:14px; align-items:center;">
-      <a href="/feed.html">Feed</a>
-      <a href="/groups.html">Groups</a>
-      <a href="/dms.html">Direct Messages</a>
-      <span id="welcome" style="margin-left:auto; color:#cbd5e1"></span>
-      <button onclick="logout()" style="margin-left:8px; padding:8px 12px; background:#ef4444; color:#fff; border:0; border-radius:8px; cursor:pointer">Logout</button>
-    </div>
-    <input id="baseUrl" style="width:280px; display:none" placeholder="http://localhost:3000" />
-  </header>
-  <div class="container">
-    <div class="panel">
-      <div class="grid">
-        <div>
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-            <label style="margin:0; font-size:18px; font-weight:600;">Conversations</label>
-            <div style="color:var(--muted); font-size:12px;">Tap to chat</div>
-          </div>
-          <ul id="conversations" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;"></ul>
-          <div style="margin-top: 20px; padding:16px; background:var(--panel); border-radius:8px;">
-            <label style="color:var(--text); font-weight:600;">Start New Conversation</label>
-            <input id="dm_username" placeholder="Enter username" style="margin-top:8px;" />
-            <div class="actions" style="margin-top:12px;">
-              <button onclick="loadDMs()" class="btn primary">Start Chat</button>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; flex-direction:column; height:500px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border);">
-            <label style="margin:0; font-size:18px; font-weight:600;">Messages</label>
-            <div id="conversation-title" style="color:var(--muted); font-size:14px;">Select a conversation</div>
-          </div>
-          <div id="dms" class="messages-container" style="flex:1; border: 1px solid var(--border); border-radius: 8px; margin-bottom:16px;"></div>
-          <div class="message-input-container">
-            <input id="dm_content" placeholder="Type a message..." />
-            <button class="btn primary" onclick="sendDM()" style="flex: 0 0 auto; padding: 10px 20px;">Send</button>
-          </div>
-        </div>
+  <div class="container app-root" style="max-width:1100px;margin:28px auto">
+    <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2>Omar Eltop — Direct Messages</h2>
+      <div>
+        <span id="userLabel" class="muted"></span>
+        <button id="logout" class="btn" style="margin-left:8px">Logout</button>
       </div>
+    </header>
+
+    <div class="dm-wrap">
+      <aside class="dm-list card">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input id="searchUser" placeholder="Search username or paste user id" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit" />
+          <button id="openManual" class="btn">Open</button>
+        </div>
+        <div id="conversations" style="display:flex;flex-direction:column;gap:6px"></div>
+      </aside>
+
+      <main class="dm-chat">
+        <div id="empty" class="card center muted">Select a conversation to view messages</div>
+
+        <section id="chat" class="card hidden" style="display:flex;flex-direction:column;min-height:520px">
+          <div class="dm-header">
+            <div>
+              <div id="chatTitle" style="font-weight:700"></div>
+              <div id="chatSubtitle" class="muted"></div>
+            </div>
+            <div id="typingIndicator" class="muted"></div>
+          </div>
+
+          <div id="messages" class="messages"></div>
+
+          <div class="composer">
+            <input id="messageInput" placeholder="Write a message…" autocomplete="off" />
+            <button id="sendBtn" class="btn">Send</button>
+          </div>
+        </section>
+      </main>
     </div>
   </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // DM page script
+    (function(){
+      const token = localStorage.getItem('token');
+      if (!token) { location.href = '/'; return; }
+
+      const userLabel = document.getElementById('userLabel');
+      const logout = document.getElementById('logout');
+      const conversationsEl = document.getElementById('conversations');
+      const searchUser = document.getElementById('searchUser');
+      const openManual = document.getElementById('openManual');
+
+      const empty = document.getElementById('empty');
+      const chat = document.getElementById('chat');
+      const chatTitle = document.getElementById('chatTitle');
+      const chatSubtitle = document.getElementById('chatSubtitle');
+      const messagesEl = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const typingIndicator = document.getElementById('typingIndicator');
+
+      function jwtPayload(){ try { return JSON.parse(atob(token.split('.')[1])); } catch { return {}; } }
+      userLabel.textContent = jwtPayload().username || jwtPayload()._id || 'You';
+      logout.onclick = ()=> { localStorage.removeItem('token'); location.reload(); };
+
+      const api = (path, opts={}) => fetch(path, Object.assign({headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}}, opts));
+
+      // Socket.IO with auth
+      const socket = io({ auth: { token } });
+      socket.on('connect', () => console.log('socket connected', socket.id));
+      socket.on('connect_error', e => console.warn('socket err', e && e.message));
+
+      // state
+      let currentOther = null;
+      let typingTimer = null;
+
+      // load conversation list (if server supports /api/users or /api/dms)
+      async function loadConversations(){
+        conversationsEl.innerHTML = '<div class="muted">Loading users…</div>';
+        try {
+          const res = await api('/api/users');
+          if (!res.ok) throw new Error('no users api');
+          const users = await res.json();
+          renderConversations(users.filter(u=>u._id !== jwtPayload()._id));
+        } catch (e) {
+          conversationsEl.innerHTML = '<div class="muted">No users list. Use the search box to open a DM by id.</div>';
+        }
+      }
+
+      function renderConversations(users){
+        conversationsEl.innerHTML = users.map(u => `
+          <div class="dm-item" data-id="${u._id}">
+            <div><strong>${escape(u.username||u._id)}</strong></div>
+            <div class="muted">${u._id.slice(0,6)}</div>
+          </div>
+        `).join('');
+        conversationsEl.querySelectorAll('.dm-item').forEach(el => el.onclick = ()=> openConversation(el.dataset.id, el));
+      }
+
+      openManual.onclick = () => {
+        const id = searchUser.value.trim();
+        if (!id) return;
+        openConversation(id);
+      };
+
+      async function openConversation(otherId, el){
+        currentOther = otherId;
+        // UI
+        document.querySelectorAll('.dm-item').forEach(i=>i.classList.remove('active'));
+        if (el) el.classList.add('active');
+        chatTitle.textContent = 'Conversation';
+        chatSubtitle.textContent = `With: ${otherId}`;
+        empty.classList.add('hidden');
+        chat.classList.remove('hidden');
+        messagesEl.innerHTML = '<div class="muted">Loading…</div>';
+        // join personal room for direct messages (server should handle)
+        socket.emit('join_dm', { toUserId: otherId });
+        try {
+          const res = await api(`/api/messages/direct/${otherId}`);
+          const msgs = await res.json();
+          renderMessages(msgs);
+          scrollBottom();
+        } catch (e) {
+          messagesEl.innerHTML = '<div class="muted">Failed to load messages</div>';
+        }
+      }
+
+      function renderMessages(list){
+        messagesEl.innerHTML = (list||[]).map(m=>{
+          const me = (m.sender === jwtPayload()._id);
+          return `<div class="msg ${me? 'me':''}">${escape(m.content)}<div class="muted" style="font-size:12px;margin-top:6px">${(m.senderName||m.sender)||''} · ${new Date(m.createdAt||m.createdAt||Date.now()).toLocaleTimeString()}</div></div>`;
+        }).join('');
+      }
+
+      function scrollBottom(){ messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+      sendBtn.onclick = sendMessage;
+      messageInput.oninput = () => {
+        if (!currentOther) return;
+        socket.emit('typing', { toUserId: currentOther, isTyping: true });
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(()=> socket.emit('typing', { toUserId: currentOther, isTyping: false }), 900);
+      };
+
+      async function sendMessage(){
+        const text = messageInput.value.trim();
+        if (!text || !currentOther) return;
+        messageInput.value = '';
+        // optimistic render
+        messagesEl.insertAdjacentHTML('beforeend', `<div class="msg me">${escape(text)}<div class="muted" style="font-size:12px;margin-top:6px">You · ${new Date().toLocaleTimeString()}</div></div>`);
+        scrollBottom();
+        try {
+          await api('/api/messages/direct/send', { method:'POST', body: JSON.stringify({ receiverId: currentOther, content: text }) });
+          // server should emit new_direct_message; if not, we already show optimistic
+        } catch (e) { console.error(e); }
+      }
+
+      // socket listeners
+      socket.on('typing', payload => {
+        if (payload.to === jwtPayload()._id || payload.from === currentOther) {
+          typingIndicator.textContent = payload.isTyping ? `${payload.fromName||'Them'} is typing…` : '';
+        }
+      });
+
+      socket.on('new_direct_message', m => {
+        if (!currentOther) return;
+        if (m.sender === currentOther || m.receiver === currentOther) {
+          messagesEl.insertAdjacentHTML('beforeend', `<div class="msg ${m.sender===jwtPayload()._id? 'me':''}">${escape(m.content)}<div class="muted" style="font-size:12px;margin-top:6px">${(m.senderName||m.sender)||''} · ${new Date(m.createdAt||Date.now()).toLocaleTimeString()}</div></div>`);
+          scrollBottom();
+        }
+      });
+
+      // utils
+      function escape(s){ return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+      // initial
+      loadConversations();
+    })();
+  </script>
 </body>
 </html>
